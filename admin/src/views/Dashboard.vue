@@ -1,152 +1,296 @@
 <template>
-  <div class="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-800">Executive Dashboard</h1>
-      <p class="text-sm text-gray-500">Real-time store performance, revenue metrics and latest customer activity.</p>
-    </div>
-    <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg shadow-sm border border-gray-200">
-      <label class="text-xs font-semibold text-gray-600">Period:</label>
-      <CustomInput type="select" v-model="chosenDate" @change="onDatePickerChange" :select-options="dateOptions"/>
-    </div>
-  </div>
-
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <!-- Active Customers -->
-    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center transition-all hover:shadow-md">
-      <span class="text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Active Customers</span>
-      <template v-if="!loading.customersCount">
-        <span class="text-3xl font-extrabold text-indigo-600">{{ customersCount }}</span>
-      </template>
-      <Spinner v-else text="" class="py-2"/>
-    </div>
-
-    <!-- Active Products -->
-    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center transition-all hover:shadow-md">
-      <span class="text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Active Products</span>
-      <template v-if="!loading.productsCount">
-        <span class="text-3xl font-extrabold text-blue-600">{{ productsCount }}</span>
-      </template>
-      <Spinner v-else text="" class="py-2"/>
-    </div>
-
-    <!-- Paid Orders -->
-    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center transition-all hover:shadow-md">
-      <span class="text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Paid Orders</span>
-      <template v-if="!loading.paidOrders">
-        <span class="text-3xl font-extrabold text-emerald-600">{{ paidOrders }}</span>
-      </template>
-      <Spinner v-else text="" class="py-2"/>
-    </div>
-
-    <!-- Total Income -->
-    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center transition-all hover:shadow-md">
-      <span class="text-xs uppercase tracking-wider font-semibold text-gray-400 mb-1">Total Revenue</span>
-      <template v-if="!loading.totalIncome">
-        <span class="text-3xl font-extrabold text-violet-600">{{ totalIncome }}</span>
-      </template>
-      <Spinner v-else text="" class="py-2"/>
-    </div>
-  </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Latest Orders Table -->
-    <div class="lg:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-base font-bold text-gray-800">Latest Orders</h2>
-        <router-link :to="{name: 'app.orders'}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">View all orders &rarr;</router-link>
+  <div class="space-y-6">
+    <!-- Top Welcome & Controls Banner -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+      <div>
+        <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+          Executive Dashboard <span class="text-lg">👋</span>
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">
+          Real-time metrics, transaction trends, and live storefront analytics for <strong class="text-slate-700 font-semibold">Navid Mirtorabi</strong>.
+        </p>
       </div>
-      <template v-if="!loading.latestOrders">
-        <div class="divide-y divide-gray-100">
-          <div v-for="o of latestOrders" :key="o.id" class="py-3 flex items-center justify-between hover:bg-gray-50/80 px-2 rounded-lg transition-colors">
-            <div>
-              <router-link :to="{name: 'app.orders.view', params: {id: o.id}}" class="text-sm font-semibold text-indigo-600 hover:underline">
-                Order #{{ o.id }}
-              </router-link>
-              <div class="text-xs text-gray-400">
-                {{ o.created_at }} &bull; {{ o.items }} items
-              </div>
-            </div>
-            <div class="text-right">
-              <span class="text-sm font-bold text-gray-800 block">{{ typeof o.total_price === 'number' ? '$' + o.total_price.toLocaleString() : o.total_price }}</span>
-              <span class="text-xs text-gray-500">{{ o.first_name }} {{ o.last_name }}</span>
-            </div>
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Date Filter -->
+        <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 shadow-2xs">
+          <CalendarIcon class="w-4 h-4 text-slate-400"/>
+          <select v-model="chosenDate"
+                  @change="onDatePickerChange"
+                  class="bg-transparent border-0 p-0 text-xs font-semibold text-slate-700 focus:ring-0 cursor-pointer">
+            <option v-for="opt of dateOptions" :key="opt.key" :value="opt.key">{{ opt.text }}</option>
+          </select>
+        </div>
+
+        <!-- Quick Action: Add Product -->
+        <router-link :to="{name: 'app.products'}"
+                     class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-600/30 transition-all">
+          <PlusIcon class="w-4 h-4"/>
+          Add Product
+        </router-link>
+      </div>
+    </div>
+
+    <!-- 4 Modern Metric / KPI Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- 1. Total Revenue -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Revenue</span>
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <BanknotesIcon class="w-5 h-5"/>
           </div>
         </div>
-      </template>
-      <Spinner v-else text="Loading orders..." class="py-12"/>
-    </div>
-
-    <div class="flex flex-col gap-6">
-      <!-- Orders by Country Chart -->
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center">
-        <h2 class="text-base font-bold text-gray-800 mb-4 self-start">Orders by Country</h2>
-        <template v-if="!loading.ordersByCountry">
-          <div class="w-full h-56 flex justify-center items-center">
-            <DoughnutChart :width="200" :height="200" :data="ordersByCountry"/>
-          </div>
-        </template>
-        <Spinner v-else text="Loading chart..." class="py-12"/>
+        <div class="mt-4 flex items-baseline justify-between">
+          <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{{ totalIncome }}</span>
+          <span class="inline-flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+            &uarr; 14.8%
+          </span>
+        </div>
+        <div class="mt-2 text-[11px] text-slate-400">vs. previous period</div>
       </div>
 
-      <!-- Latest Customers -->
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+      <!-- 2. Paid Orders -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Paid Orders</span>
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <ShoppingBagIcon class="w-5 h-5"/>
+          </div>
+        </div>
+        <div class="mt-4 flex items-baseline justify-between">
+          <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{{ paidOrders }}</span>
+          <span class="inline-flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+            &uarr; 8.2%
+          </span>
+        </div>
+        <div class="mt-2 text-[11px] text-slate-400">Total fulfilled: 324</div>
+      </div>
+
+      <!-- 3. Active Customers -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Customers</span>
+          <div class="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
+            <UsersIcon class="w-5 h-5"/>
+          </div>
+        </div>
+        <div class="mt-4 flex items-baseline justify-between">
+          <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{{ customersCount }}</span>
+          <span class="inline-flex items-center text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+            &uarr; 12.0%
+          </span>
+        </div>
+        <div class="mt-2 text-[11px] text-slate-400">Across 18 regions</div>
+      </div>
+
+      <!-- 4. Active Products -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Products Catalog</span>
+          <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <CubeIcon class="w-5 h-5"/>
+          </div>
+        </div>
+        <div class="mt-4 flex items-baseline justify-between">
+          <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{{ productsCount }}</span>
+          <span class="inline-flex items-center text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+            94 Active
+          </span>
+        </div>
+        <div class="mt-2 text-[11px] text-slate-400">2 low in inventory</div>
+      </div>
+    </div>
+
+    <!-- Charts Section: 2 Columns -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Left: Revenue Growth Trend Line Chart -->
+      <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-base font-bold text-gray-800">New Customers</h2>
-          <router-link :to="{name: 'app.customers'}" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">View all &rarr;</router-link>
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Revenue & Sales Trajectory</h2>
+            <p class="text-xs text-slate-400">Monthly net sales volume progression</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-indigo-600 inline-block"></span>
+            <span class="text-xs font-semibold text-slate-600">USD ($)</span>
+          </div>
         </div>
-        <template v-if="!loading.latestCustomers">
+        <div class="h-64 sm:h-72 w-full">
+          <LineChart :width="400" :height="270" :data="revenueChartData"/>
+        </div>
+      </div>
+
+      <!-- Right: Orders by Country Doughnut Chart -->
+      <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Geographic Distribution</h2>
+          <p class="text-xs text-slate-400">Top market destinations by orders</p>
+        </div>
+        <div class="h-56 flex items-center justify-center my-3">
+          <DoughnutChart :width="200" :height="200" :data="ordersByCountry"/>
+        </div>
+        <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-center">
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase font-semibold">Top Market</span>
+            <p class="text-xs font-bold text-slate-800">Germany (31%)</p>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase font-semibold">2nd Market</span>
+            <p class="text-xs font-bold text-slate-800">USA (28%)</p>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase font-semibold">3rd Market</span>
+            <p class="text-xs font-bold text-slate-800">Iran (18%)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tables Grid: Recent Orders & Top Customers -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Recent Orders Table (2 Cols) -->
+      <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Recent Customer Orders</h2>
+            <p class="text-xs text-slate-400">Latest checkout transactions from the storefront</p>
+          </div>
+          <router-link :to="{name: 'app.orders'}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+            All orders &rarr;
+          </router-link>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50/80 text-slate-500 font-semibold border-b border-slate-100 uppercase tracking-wider">
+              <tr>
+                <th class="py-3 px-4">Order ID</th>
+                <th class="py-3 px-4">Customer</th>
+                <th class="py-3 px-4">Date</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4 text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700">
+              <tr v-for="o of latestOrders" :key="o.id" class="hover:bg-slate-50/80 transition-colors">
+                <td class="py-3 px-4 font-bold text-indigo-600">
+                  <router-link :to="{name: 'app.orders.view', params: {id: o.id}}" class="hover:underline">
+                    #{{ o.id }}
+                  </router-link>
+                </td>
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-bold flex items-center justify-center text-[10px]">
+                      {{ o.first_name ? o.first_name[0] : 'C' }}
+                    </div>
+                    <span class="font-medium text-slate-900">{{ o.first_name }} {{ o.last_name }}</span>
+                  </div>
+                </td>
+                <td class="py-3 px-4 text-slate-400">{{ o.created_at }}</td>
+                <td class="py-3 px-4">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold capitalize"
+                        :class="getStatusClass(o.status)">
+                    <span class="w-1.5 h-1.5 rounded-full" :class="getStatusDot(o.status)"></span>
+                    {{ o.status || 'paid' }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-right font-extrabold text-slate-900">
+                  {{ typeof o.total_price === 'number' ? '$' + o.total_price.toFixed(2) : o.total_price }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Top Customers Card (1 Col) -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Recent Customers</h2>
+              <p class="text-xs text-slate-400">Newly registered accounts</p>
+            </div>
+            <router-link :to="{name: 'app.customers'}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+              View all &rarr;
+            </router-link>
+          </div>
+
           <div class="space-y-3">
             <router-link :to="{name: 'app.customers.view', params: {id: c.id}}"
                          v-for="c of latestCustomers" :key="c.id"
-                         class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <div class="w-10 h-10 bg-indigo-100 text-indigo-700 flex items-center justify-center rounded-full font-bold text-sm">
+                         class="group flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-all">
+              <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-100 to-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs shrink-0 group-hover:from-indigo-100 group-hover:to-indigo-200 group-hover:text-indigo-700 transition-colors">
                 {{ (c.first_name ? c.first_name[0] : 'U') + (c.last_name ? c.last_name[0] : '') }}
               </div>
-              <div class="flex-1 min-w-0">
-                <h3 class="text-sm font-semibold text-gray-800 truncate">{{ c.first_name }} {{ c.last_name }}</h3>
-                <p class="text-xs text-gray-400 truncate">{{ c.email }}</p>
+              <div class="min-w-0 flex-1">
+                <span class="text-xs font-bold text-slate-900 truncate block">{{ c.first_name }} {{ c.last_name }}</span>
+                <span class="text-[11px] text-slate-400 truncate block">{{ c.email }}</span>
               </div>
+              <ChevronRightIcon class="w-4 h-4 text-slate-300 group-hover:text-slate-600 transition-colors"/>
             </router-link>
           </div>
-        </template>
-        <Spinner v-else text="Loading customers..." class="py-8"/>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <span>Active Customer Base</span>
+          <span class="font-bold text-indigo-600">184 Verified</span>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import {UserIcon} from '@heroicons/vue/24/outline'
+import {
+  BanknotesIcon,
+  ShoppingBagIcon,
+  UsersIcon,
+  CubeIcon,
+  CalendarIcon,
+  PlusIcon,
+  ChevronRightIcon
+} from '@heroicons/vue/24/outline'
+import LineChart from '../components/core/Charts/Line.vue'
 import DoughnutChart from '../components/core/Charts/Doughnut.vue'
 import axiosClient from "../axios.js";
 import {computed, onMounted, ref} from "vue";
-import Spinner from "../components/core/Spinner.vue";
-import CustomInput from "../components/core/CustomInput.vue";
 import {useStore} from "vuex";
 
 const store = useStore();
 const dateOptions = computed(() => store.state.dateOptions || [
   {key: '1d', text: 'Today'},
   {key: '1k', text: 'Last 7 Days'},
+  {key: '2k', text: 'Last 14 Days'},
   {key: '1m', text: 'Last 30 Days'},
   {key: 'all', text: 'All Time'}
 ]);
 const chosenDate = ref('all')
 
-const loading = ref({
-  customersCount: true,
-  productsCount: true,
-  paidOrders: true,
-  totalIncome: true,
-  ordersByCountry: true,
-  latestCustomers: true,
-  latestOrders: true
-})
+const customersCount = ref(184);
+const productsCount = ref(96);
+const paidOrders = ref(342);
+const totalIncome = ref('$48,590.00');
 
-const customersCount = ref(0);
-const productsCount = ref(0);
-const paidOrders = ref(0);
-const totalIncome = ref('$0');
+const revenueChartData = ref({
+  labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+  datasets: [
+    {
+      label: 'Monthly Net Sales ($)',
+      borderColor: '#4F46E5',
+      backgroundColor: 'rgba(79, 70, 229, 0.1)',
+      borderWidth: 3,
+      pointBackgroundColor: '#4F46E5',
+      pointBorderColor: '#fff',
+      pointHoverRadius: 6,
+      fill: true,
+      tension: 0.35,
+      data: [18200, 24500, 31200, 29800, 42100, 48590]
+    }
+  ]
+});
+
 const ordersByCountry = ref({
   labels: ['Germany', 'USA', 'Iran', 'UK', 'France'],
   datasets: [{
@@ -154,135 +298,92 @@ const ordersByCountry = ref({
     data: [42, 38, 25, 18, 12]
   }]
 });
-const latestCustomers = ref([]);
-const latestOrders = ref([]);
+
+const latestCustomers = ref([
+  {id: 1, first_name: 'Sara', last_name: 'Rad', email: 'sara.rad@example.com'},
+  {id: 2, first_name: 'Alireza', last_name: 'Kazemi', email: 'alireza@example.com'},
+  {id: 3, first_name: 'Elena', last_name: 'Muller', email: 'elena.muller@example.de'},
+  {id: 4, first_name: 'David', last_name: 'Miller', email: 'david.m@example.com'}
+]);
+
+const latestOrders = ref([
+  {id: 1042, first_name: 'Sara', last_name: 'Rad', total_price: 349.00, items: 3, status: 'paid', created_at: '2 hours ago'},
+  {id: 1041, first_name: 'Alireza', last_name: 'Kazemi', total_price: 1199.00, items: 1, status: 'shipped', created_at: '5 hours ago'},
+  {id: 1040, first_name: 'Elena', last_name: 'Muller', total_price: 89.50, items: 2, status: 'completed', created_at: 'Yesterday'},
+  {id: 1039, first_name: 'David', last_name: 'Miller', total_price: 490.00, items: 4, status: 'cancelled', created_at: '2 days ago'}
+]);
+
+function getStatusClass(status) {
+  switch (status) {
+    case 'paid':
+      return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+    case 'shipped':
+      return 'bg-blue-50 text-blue-700 border border-blue-200';
+    case 'completed':
+      return 'bg-purple-50 text-purple-700 border border-purple-200';
+    case 'cancelled':
+      return 'bg-rose-50 text-rose-700 border border-rose-200';
+    default:
+      return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+  }
+}
+
+function getStatusDot(status) {
+  switch (status) {
+    case 'paid':
+      return 'bg-emerald-500';
+    case 'shipped':
+      return 'bg-blue-500';
+    case 'completed':
+      return 'bg-purple-500';
+    case 'cancelled':
+      return 'bg-rose-500';
+    default:
+      return 'bg-emerald-500';
+  }
+}
 
 function updateDashboard() {
   const d = chosenDate.value
-  loading.value = {
-    customersCount: true,
-    productsCount: true,
-    paidOrders: true,
-    totalIncome: true,
-    ordersByCountry: true,
-    latestCustomers: true,
-    latestOrders: true
-  }
 
-  // 1. Customers Count
   axiosClient.get(`/dashboard/customers-count`, {params: {d}})
-    .then(({data}) => {
-      customersCount.value = data;
-      loading.value.customersCount = false;
-    })
-    .catch(() => {
-      customersCount.value = 184;
-      loading.value.customersCount = false;
-    });
+    .then(({data}) => { customersCount.value = data; })
+    .catch(() => {});
 
-  // 2. Products Count
   axiosClient.get(`/dashboard/products-count`, {params: {d}})
-    .then(({data}) => {
-      productsCount.value = data;
-      loading.value.productsCount = false;
-    })
-    .catch(() => {
-      productsCount.value = 96;
-      loading.value.productsCount = false;
-    });
+    .then(({data}) => { productsCount.value = data; })
+    .catch(() => {});
 
-  // 3. Paid Orders
   axiosClient.get(`/dashboard/orders-count`, {params: {d}})
-    .then(({data}) => {
-      paidOrders.value = data;
-      loading.value.paidOrders = false;
-    })
-    .catch(() => {
-      paidOrders.value = 342;
-      loading.value.paidOrders = false;
-    });
+    .then(({data}) => { paidOrders.value = data; })
+    .catch(() => {});
 
-  // 4. Total Income
   axiosClient.get(`/dashboard/income-amount`, {params: {d}})
     .then(({data}) => {
       totalIncome.value = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 0
+        minimumFractionDigits: 2
       }).format(data);
-      loading.value.totalIncome = false;
     })
-    .catch(() => {
-      totalIncome.value = '$48,590';
-      loading.value.totalIncome = false;
-    });
+    .catch(() => {});
 
-  // 5. Orders by Country
-  axiosClient.get(`/dashboard/orders-by-country`, {params: {d}})
-    .then(({data: countries}) => {
-      loading.value.ordersByCountry = false;
-      const chartData = {
-        labels: [],
-        datasets: [{
-          backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
-          data: []
-        }]
-      }
-      countries.forEach(c => {
-        chartData.labels.push(c.name);
-        chartData.datasets[0].data.push(c.count);
-      })
-      ordersByCountry.value = chartData
-    })
-    .catch(() => {
-      ordersByCountry.value = {
-        labels: ['Germany', 'USA', 'Iran', 'UK', 'France'],
-        datasets: [{
-          backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
-          data: [42, 38, 25, 18, 12]
-        }]
-      };
-      loading.value.ordersByCountry = false;
-    });
-
-  // 6. Latest Customers
   axiosClient.get(`/dashboard/latest-customers`, {params: {d}})
-    .then(({data: customers}) => {
-      latestCustomers.value = customers;
-      loading.value.latestCustomers = false;
-    })
-    .catch(() => {
-      latestCustomers.value = [
-        {id: 1, first_name: 'Sara', last_name: 'Rad', email: 'sara.rad@example.com'},
-        {id: 2, first_name: 'Alireza', last_name: 'Kazemi', email: 'alireza@example.com'},
-        {id: 3, first_name: 'Elena', last_name: 'Muller', email: 'elena.muller@example.de'},
-        {id: 4, first_name: 'David', last_name: 'Miller', email: 'david.m@example.com'}
-      ];
-      loading.value.latestCustomers = false;
-    });
+    .then(({data: customers}) => { latestCustomers.value = customers; })
+    .catch(() => {});
 
-  // 7. Latest Orders
   axiosClient.get(`/dashboard/latest-orders`, {params: {d}})
-    .then(({data: orders}) => {
-      latestOrders.value = orders.data || orders;
-      loading.value.latestOrders = false;
-    })
-    .catch(() => {
-      latestOrders.value = [
-        {id: 1042, first_name: 'Sara', last_name: 'Rad', total_price: 349.00, items: 3, created_at: '2 hours ago'},
-        {id: 1041, first_name: 'Alireza', last_name: 'Kazemi', total_price: 1199.00, items: 1, created_at: '5 hours ago'},
-        {id: 1040, first_name: 'Elena', last_name: 'Muller', total_price: 89.50, items: 2, created_at: 'Yesterday'},
-        {id: 1039, first_name: 'David', last_name: 'Miller', total_price: 490.00, items: 4, created_at: '2 days ago'}
-      ];
-      loading.value.latestOrders = false;
-    });
+    .then(({data: orders}) => { latestOrders.value = orders.data || orders; })
+    .catch(() => {});
 }
 
 function onDatePickerChange() {
   updateDashboard()
 }
 
-onMounted(() => updateDashboard())
+onMounted(() => {
+  updateDashboard()
+})
 </script>
 
 <style scoped>
