@@ -1,7 +1,10 @@
+<script setup>
+
+</script>
+
 <template>
-    <router-view class="h-full" />
-  </template>
+  <router-view></router-view>
+</template>
 
-  <script setup></script>
-
-  <style></style>
+<style>
+</style>
