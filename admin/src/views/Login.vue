@@ -29,7 +29,7 @@
           <label for="email-address" class="sr-only">Email address</label>
           <input id="email-address" name="email" type="email" autocomplete="email" required="" v-model="user.email"
                  class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                 placeholder="Email address"/>
+                 placeholder="Email address (e.g. admin@example.com)"/>
         </div>
         <div>
           <label for="password" class="sr-only">Password</label>
@@ -57,7 +57,7 @@
       <div>
         <button type="submit"
                 :disabled="loading"
-                class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                 :class="{
                   'cursor-not-allowed': loading,
                   'hover:bg-indigo-500': loading,
@@ -89,6 +89,15 @@
           Sign in
         </button>
       </div>
+
+      <!-- Quick Demo Access for Interviews -->
+      <div class="pt-4 border-t border-gray-200">
+        <button type="button"
+                @click="loginAsDemo"
+                class="w-full flex justify-center items-center py-2.5 px-4 border border-indigo-300 text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all shadow-sm">
+          🚀 Instant Demo Preview (ورود مستقیم به پنل ادمین)
+        </button>
+      </div>
     </form>
   </GuestLayout>
 </template>
@@ -116,10 +125,16 @@ function login() {
       loading.value = false;
       router.push({name: 'app.dashboard'})
     })
-    .catch(({response}) => {
+    .catch((err) => {
       loading.value = false;
-      errorMsg.value = response.data.message;
+      errorMsg.value = err?.response?.data?.message || 'Login failed. You can use Instant Demo Preview below.';
     })
 }
 
+function loginAsDemo() {
+  store.commit('setToken', 'demo-token-interview-ready');
+  store.commit('setUser', {name: 'Navid Mirtorabi', email: 'navidm632@gmail.com'});
+  sessionStorage.setItem('TOKEN', 'demo-token-interview-ready');
+  router.push({name: 'app.dashboard'});
+}
 </script>
