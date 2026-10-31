@@ -18,7 +18,6 @@
 graph TD
     subgraph Client Application Layer
         SPA[Vue 3 + Vite Admin Backoffice]
-        Storefront[Customer Storefront]
     end
 
     subgraph API & Gateway Layer
@@ -38,7 +37,6 @@ graph TD
     end
 
     SPA -->|Bearer Token & Axios| Sanctum
-    Storefront -->|REST Endpoints| Router
     Sanctum --> Router
     Router --> Controllers
     Controllers --> Services
@@ -119,6 +117,21 @@ npm run dev
 # Build for production
 npm run build
 ```
+
+### Demo mode (preview without an API)
+
+Demo mode is **off by default**. When it is off, a failed API call is a real
+error and the lists start empty — no sample data is injected. To preview the
+admin with sample data, run it with:
+
+```bash
+cd admin
+VITE_DEMO_MODE=true npm run dev
+```
+
+In demo mode a banner says "Demo mode — showing sample data", the login page
+shows a demo sign-in button, and creates/updates/deletes only change the
+local sample rows. Never enable demo mode against a real store.
 
 ### 2. Laravel Backend Setup
 ```bash

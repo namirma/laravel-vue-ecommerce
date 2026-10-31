@@ -90,33 +90,36 @@
         </button>
       </div>
 
-      <!-- Quick Demo Access for Interviews -->
-      <div class="pt-4 border-t border-gray-200">
+      <!-- Demo access: only when VITE_DEMO_MODE=true -->
+      <div v-if="isDemoMode" class="pt-4 border-t border-gray-200">
         <button type="button"
                 @click="loginAsDemo"
                 class="w-full flex justify-center items-center py-2.5 px-4 border border-indigo-300 text-sm font-medium rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-all shadow-sm">
-          🚀 Instant Demo Preview (ورود مستقیم به پنل ادمین)
+          Continue with demo data
         </button>
+        <p class="mt-2 text-center text-xs text-slate-400">Demo mode is on &mdash; no real account is signed in.</p>
       </div>
     </form>
   </GuestLayout>
 </template>
 
 <script setup>
-import {ref} from 'vue'
+import {reactive, ref} from 'vue'
 import {LockClosedIcon} from '@heroicons/vue/20/solid'
 import GuestLayout from "../components/GuestLayout.vue";
 import store from "../store";
 import router from "../router";
+import { isDemoMode } from "../config";
+import { DEMO_TOKEN, demoUser } from "../demo/demoData";
 
 let loading = ref(false);
 let errorMsg = ref("");
 
-const user = {
+const user = reactive({
   email: '',
   password: '',
   remember: false
-}
+})
 
 function login() {
   loading.value = true;
@@ -127,14 +130,17 @@ function login() {
     })
     .catch((err) => {
       loading.value = false;
-      errorMsg.value = err?.response?.data?.message || 'Login failed. You can use Instant Demo Preview below.';
+      errorMsg.value = err?.response?.data?.message || 'Login failed. Please check your credentials and try again.';
     })
 }
 
 function loginAsDemo() {
-  store.commit('setToken', 'demo-token-interview-ready');
-  store.commit('setUser', {name: 'Navid Mirtorabi', email: 'navidm632@gmail.com'});
-  sessionStorage.setItem('TOKEN', 'demo-token-interview-ready');
+  if (!isDemoMode) {
+    return;
+  }
+  store.commit('setToken', DEMO_TOKEN);
+  store.commit('setUser', demoUser);
+  sessionStorage.setItem('TOKEN', DEMO_TOKEN);
   router.push({name: 'app.dashboard'});
 }
 </script>

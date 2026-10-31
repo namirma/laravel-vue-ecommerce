@@ -7,7 +7,7 @@
           Executive Dashboard <span class="text-lg">👋</span>
         </h1>
         <p class="text-xs sm:text-sm text-slate-500 mt-1">
-          Real-time metrics, transaction trends, and live storefront analytics for <strong class="text-slate-700 font-semibold">Navid Mirtorabi</strong>.
+          Metrics, transaction trends, and storefront analytics for the selected period.
         </p>
       </div>
 
@@ -43,11 +43,8 @@
         </div>
         <div class="mt-4 flex items-baseline justify-between">
           <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{{ totalIncome }}</span>
-          <span class="inline-flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-            &uarr; 14.8%
-          </span>
         </div>
-        <div class="mt-2 text-[11px] text-slate-400">vs. previous period</div>
+        <div class="mt-2 text-[11px] text-slate-400">Selected period</div>
       </div>
 
       <!-- 2. Paid Orders -->
@@ -60,11 +57,8 @@
         </div>
         <div class="mt-4 flex items-baseline justify-between">
           <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{{ paidOrders }}</span>
-          <span class="inline-flex items-center text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-            &uarr; 8.2%
-          </span>
         </div>
-        <div class="mt-2 text-[11px] text-slate-400">Total fulfilled: 324</div>
+        <div class="mt-2 text-[11px] text-slate-400">In the selected period</div>
       </div>
 
       <!-- 3. Active Customers -->
@@ -77,11 +71,8 @@
         </div>
         <div class="mt-4 flex items-baseline justify-between">
           <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{{ customersCount }}</span>
-          <span class="inline-flex items-center text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
-            &uarr; 12.0%
-          </span>
         </div>
-        <div class="mt-2 text-[11px] text-slate-400">Across 18 regions</div>
+        <div class="mt-2 text-[11px] text-slate-400">Registered accounts</div>
       </div>
 
       <!-- 4. Active Products -->
@@ -94,11 +85,8 @@
         </div>
         <div class="mt-4 flex items-baseline justify-between">
           <span class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{{ productsCount }}</span>
-          <span class="inline-flex items-center text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
-            94 Active
-          </span>
         </div>
-        <div class="mt-2 text-[11px] text-slate-400">2 low in inventory</div>
+        <div class="mt-2 text-[11px] text-slate-400">In the catalog</div>
       </div>
     </div>
 
@@ -173,6 +161,9 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 text-slate-700">
+              <tr v-if="!latestOrders.length">
+                <td colspan="5" class="py-6 px-4 text-center text-slate-400">No orders yet.</td>
+              </tr>
               <tr v-for="o of latestOrders" :key="o.id" class="hover:bg-slate-50/80 transition-colors">
                 <td class="py-3 px-4 font-bold text-indigo-600">
                   <router-link :to="{name: 'app.orders.view', params: {id: o.id}}" class="hover:underline">
@@ -217,6 +208,7 @@
             </router-link>
           </div>
 
+          <p v-if="!latestCustomers.length" class="py-4 text-center text-xs text-slate-400">No customers yet.</p>
           <div class="space-y-3">
             <router-link :to="{name: 'app.customers.view', params: {id: c.id}}"
                          v-for="c of latestCustomers" :key="c.id"
@@ -235,7 +227,7 @@
 
         <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
           <span>Active Customer Base</span>
-          <span class="font-bold text-indigo-600">184 Verified</span>
+          <span class="font-bold text-indigo-600">{{ customersCount }} accounts</span>
         </div>
       </div>
     </div>
@@ -257,6 +249,8 @@ import DoughnutChart from '../components/core/Charts/Doughnut.vue'
 import axiosClient from "../axios.js";
 import {computed, onMounted, ref} from "vue";
 import {useStore} from "vuex";
+import { isDemoMode } from "../config";
+import { demoCustomers, demoOrders } from "../demo/demoData";
 
 const store = useStore();
 const dateOptions = computed(() => store.state.dateOptions || [
@@ -268,10 +262,12 @@ const dateOptions = computed(() => store.state.dateOptions || [
 ]);
 const chosenDate = ref('all')
 
-const customersCount = ref(184);
-const productsCount = ref(96);
-const paidOrders = ref(342);
-const totalIncome = ref('$48,590.00');
+// Start at zero/empty: API values replace these, and demo values are
+// only used when demo mode is on (see updateDashboard).
+const customersCount = ref(0);
+const productsCount = ref(0);
+const paidOrders = ref(0);
+const totalIncome = ref('$0.00');
 
 const revenueChartData = ref({
   labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
@@ -299,19 +295,8 @@ const ordersByCountry = ref({
   }]
 });
 
-const latestCustomers = ref([
-  {id: 1, first_name: 'Sara', last_name: 'Rad', email: 'sara.rad@example.com'},
-  {id: 2, first_name: 'Alireza', last_name: 'Kazemi', email: 'alireza@example.com'},
-  {id: 3, first_name: 'Elena', last_name: 'Muller', email: 'elena.muller@example.de'},
-  {id: 4, first_name: 'David', last_name: 'Miller', email: 'david.m@example.com'}
-]);
-
-const latestOrders = ref([
-  {id: 1042, first_name: 'Sara', last_name: 'Rad', total_price: 349.00, items: 3, status: 'paid', created_at: '2 hours ago'},
-  {id: 1041, first_name: 'Alireza', last_name: 'Kazemi', total_price: 1199.00, items: 1, status: 'shipped', created_at: '5 hours ago'},
-  {id: 1040, first_name: 'Elena', last_name: 'Muller', total_price: 89.50, items: 2, status: 'completed', created_at: 'Yesterday'},
-  {id: 1039, first_name: 'David', last_name: 'Miller', total_price: 490.00, items: 4, status: 'cancelled', created_at: '2 days ago'}
-]);
+const latestCustomers = ref([]);
+const latestOrders = ref([]);
 
 function getStatusClass(status) {
   switch (status) {
@@ -348,15 +333,15 @@ function updateDashboard() {
 
   axiosClient.get(`/dashboard/customers-count`, {params: {d}})
     .then(({data}) => { customersCount.value = data; })
-    .catch(() => {});
+    .catch(() => { if (isDemoMode) { customersCount.value = 184; } });
 
   axiosClient.get(`/dashboard/products-count`, {params: {d}})
     .then(({data}) => { productsCount.value = data; })
-    .catch(() => {});
+    .catch(() => { if (isDemoMode) { productsCount.value = 96; } });
 
   axiosClient.get(`/dashboard/orders-count`, {params: {d}})
     .then(({data}) => { paidOrders.value = data; })
-    .catch(() => {});
+    .catch(() => { if (isDemoMode) { paidOrders.value = 342; } });
 
   axiosClient.get(`/dashboard/income-amount`, {params: {d}})
     .then(({data}) => {
@@ -366,15 +351,27 @@ function updateDashboard() {
         minimumFractionDigits: 2
       }).format(data);
     })
-    .catch(() => {});
+    .catch(() => { if (isDemoMode) { totalIncome.value = '$48,590.00'; } });
 
   axiosClient.get(`/dashboard/latest-customers`, {params: {d}})
     .then(({data: customers}) => { latestCustomers.value = customers; })
-    .catch(() => {});
+    .catch(() => { if (isDemoMode) { latestCustomers.value = demoCustomers; } });
 
   axiosClient.get(`/dashboard/latest-orders`, {params: {d}})
     .then(({data: orders}) => { latestOrders.value = orders.data || orders; })
-    .catch(() => {});
+    .catch(() => {
+      if (isDemoMode) {
+        latestOrders.value = demoOrders.map((o) => ({
+          id: o.id,
+          first_name: o.customer?.first_name,
+          last_name: o.customer?.last_name,
+          total_price: o.total_price,
+          items: o.number_of_items,
+          status: o.status,
+          created_at: o.created_at,
+        }));
+      }
+    });
 }
 
 function onDatePickerChange() {

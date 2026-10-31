@@ -8,6 +8,11 @@
       <!-- Navbar -->
       <Navbar :sidebar-opened="sidebarOpened" @toggle-sidebar="toggleSidebar"/>
 
+      <!-- Demo banner: only in demo mode, so sample data is never mistaken for live data -->
+      <div v-if="isDemoMode" class="mx-4 sm:mx-6 lg:mx-8 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-medium text-amber-800">
+        Demo mode &mdash; showing sample data. Start the Laravel API and run without <code class="font-mono">VITE_DEMO_MODE</code> for live data.
+      </div>
+
       <!-- Content -->
       <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
         <router-view></router-view>
@@ -15,10 +20,10 @@
 
       <!-- Footer -->
       <footer class="py-4 px-6 border-t border-slate-200/80 bg-white/50 text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2">
-        <span>&copy; 2026 <strong>Laravel & Vue E-Commerce Admin</strong> &bull; Crafted by <a href="https://github.com/namirma" target="_blank" class="text-indigo-600 hover:underline font-medium">Navid Mirtorabi</a></span>
+        <span>&copy; {{ currentYear }} <strong>Laravel &amp; Vue E-Commerce Admin</strong></span>
         <div class="flex items-center gap-4">
-          <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> API: Connected</span>
-          <span>Vue 3.5 &bull; Vite 6 &bull; Tailwind 3.4</span>
+          <span v-if="isDemoMode" class="inline-flex items-center gap-1.5 text-amber-700"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Demo data</span>
+          <span>Vue 3 &bull; Vite 6 &bull; Tailwind 3</span>
         </div>
       </footer>
     </div>
@@ -39,8 +44,10 @@ import Sidebar from "./Sidebar.vue";
 import Navbar from "./Navbar.vue";
 import store from "../store";
 import Toast from "./core/Toast.vue";
+import { isDemoMode } from "../config";
 
 const sidebarOpened = ref(true);
+const currentYear = new Date().getFullYear();
 const currentUser = computed(() => store.state.user.data);
 const token = computed(() => store.state.user.token);
 
@@ -56,16 +63,6 @@ function updateSidebarState() {
 }
 
 onMounted(() => {
-  // Ensure default demo user exists if token exists but user.data is empty
-  if (token.value && (!currentUser.value || !currentUser.value.id)) {
-    store.commit('setUser', {
-      id: 1,
-      name: 'Navid Mirtorabi',
-      email: 'navidm632@gmail.com',
-      role: 'Super Admin'
-    });
-  }
-
   store.dispatch('getCurrentUser').catch(() => {});
   store.dispatch('getCountries').catch(() => {});
   updateSidebarState();
@@ -76,12 +73,3 @@ onUnmounted(() => {
   window.removeEventListener('resize', updateSidebarState)
 })
 </script>
-
-<style>
-html, body, #app {
-  min-height: 100%;
-  margin: 0;
-  padding: 0;
-  background-color: #f8fafc;
-}
-</style>

@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "laravel/laravel",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Laravel 11 REST API + Vue 3 admin SPA for a small e-commerce platform (products, orders, customers, reports).",
     "keywords": [
         "laravel",
         "framework"

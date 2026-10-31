@@ -6,8 +6,8 @@
 
   <!-- Sidebar Container -->
   <aside :class="[
-    'fixed lg:sticky top-0 h-screen z-40 flex flex-col justify-between bg-slate-900 text-slate-300 w-64 border-r border-slate-800/80 transition-all duration-300 ease-in-out shrink-0 select-none',
-    sidebarOpened ? 'translate-x-0' : '-translate-x-full lg:w-20'
+    'fixed lg:sticky top-0 h-screen z-40 flex flex-col justify-between bg-slate-900 text-slate-300 border-r border-slate-800/80 transition-all duration-300 ease-in-out shrink-0 select-none',
+    sidebarOpened ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0 lg:w-20'
   ]">
     <!-- Top Brand & Header -->
     <div>
@@ -63,7 +63,7 @@
                           :class="$route.name === 'app.products' ? 'text-white' : 'text-slate-400 group-hover:text-indigo-400'"/>
                 <span v-if="sidebarOpened" class="truncate">Products</span>
               </div>
-              <span v-if="sidebarOpened" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 group-hover:bg-slate-700">96</span>
+              <span v-if="sidebarOpened" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 group-hover:bg-slate-700">{{ productsTotal }}</span>
             </router-link>
 
             <router-link :to="{name: 'app.orders'}"
@@ -76,7 +76,7 @@
                                            :class="$route.name === 'app.orders' ? 'text-white' : 'text-slate-400 group-hover:text-indigo-400'"/>
                 <span v-if="sidebarOpened" class="truncate">Orders</span>
               </div>
-              <span v-if="sidebarOpened" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/50">342</span>
+              <span v-if="sidebarOpened" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/50">{{ ordersTotal }}</span>
             </router-link>
           </div>
         </div>
@@ -114,12 +114,12 @@
       <div v-if="sidebarOpened" class="flex items-center justify-between p-2 rounded-xl bg-slate-800/50">
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 font-bold flex items-center justify-center shrink-0 border border-indigo-500/30">
-            NM
+            {{ userInitials }}
           </div>
           <div class="min-w-0 flex flex-col">
-            <span class="text-xs font-semibold text-white truncate">{{ currentUser.name || 'Navid Mirtorabi' }}</span>
+            <span class="text-xs font-semibold text-white truncate">{{ currentUser?.name || 'Admin' }}</span>
             <span class="text-[10px] text-emerald-400 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Super Admin
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> {{ currentUser?.role || 'Admin' }}
             </span>
           </div>
         </div>
@@ -159,6 +159,13 @@ defineProps({
 defineEmits(['close'])
 
 const currentUser = computed(() => store.state.user.data);
+const productsTotal = computed(() => store.state.products.total ?? 0);
+const ordersTotal = computed(() => store.state.orders.total ?? 0);
+const userInitials = computed(() => {
+  const name = (currentUser.value?.name || 'Admin').trim();
+  const parts = name.split(/\s+/).filter(Boolean);
+  return (parts[0]?.[0] || 'A') + (parts[1]?.[0] || '');
+});
 
 function logout() {
   store.dispatch('logout')

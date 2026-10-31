@@ -33,7 +33,7 @@
 
               <form @submit.prevent="onSubmit">
                 <div class="bg-white p-6 space-y-4">
-                  <CustomInput class="mb-1" v-model="user.name" label="Full Name" required placeholder="e.g. Navid Mirtorabi"/>
+                  <CustomInput class="mb-1" v-model="user.name" label="Full Name" required placeholder="e.g. Jane Doe"/>
                   <CustomInput class="mb-1" v-model="user.email" label="Email Address" type="email" required placeholder="admin@domain.com"/>
                   <CustomInput type="password" class="mb-1" v-model="user.password" :label="user.id ? 'Password (leave blank to keep unchanged)' : 'Password'" :required="!user.id" placeholder="••••••••"/>
                 </div>
