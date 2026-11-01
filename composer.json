@@ -1,11 +1,14 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "namirma/laravel-vue-ecommerce",
     "type": "project",
     "description": "Laravel 11 REST API + Vue 3 admin SPA for a small e-commerce platform (products, orders, customers, reports).",
     "keywords": [
         "laravel",
-        "framework"
+        "vue",
+        "e-commerce",
+        "admin",
+        "api"
     ],
     "license": "MIT",
     "require": {
