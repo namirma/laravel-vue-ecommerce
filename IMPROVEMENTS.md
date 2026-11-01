@@ -160,3 +160,70 @@ The admin shipped as if it were live, but it was not:
 5. **No secrets were found in the repo** (`.env.example` files contain
    placeholders only). The demo token is a local preview constant,
    not a real credential, and it is only used in demo mode.
+
+## Final professionalisation round — 2026-11-01 (base: master tip efb83a5)
+
+Audit corrections to the earlier round's notes: the `App\Models\Api\*`
+subclasses are NOT dead duplicates — `Api\ProductController`,
+`Api\OrderController` and `Api\UserController` use them, and they change
+the route key from `slug` to `id`, so they were left alone. The web
+controllers (Breeze auth, cart, checkout, profile) really are unrouted:
+`routes/web.php` serves only the landing page, and they were again left
+in place rather than deleted without a PHP test run.
+
+### What changed (master, direct push as authorised)
+
+- `749d006` — Dashboard/report charts stop showing sample data as real
+  data in live mode. The orders-by-country doughnut is now wired to the
+  existing `/dashboard/orders-by-country` endpoint (it was never called)
+  and the top-3 markets are computed from that data; the revenue line
+  chart has no monthly-revenue endpoint, so it is empty in live mode
+  (with an on-screen note) and sample-only in demo mode; report charts
+  start empty in live mode and clear on API failure.
+- `b0f3e64` — `admin/postcss.config.cjs` deleted; it was redundant
+  (vite.config.js already sets PostCSS plugins inline) and it blocks
+  Tailwind 4. Verified: the Vite 6 build still passes without it.
+- `c585295` — Major upgrades: Vite 6.4.5 → 8.3.5, @vitejs/plugin-vue
+  5.2.4 → 6.0.10, Tailwind 3.4.19 → 4.3.3 (via @tailwindcss/vite,
+  `@import "tailwindcss"` + `@config tailwind.config.js`), Vue Router
+  4.6.4 → 5.4.0. No route/guard code changed. Unused
+  autoprefixer/postcss devDependencies removed. First attempt failed
+  because the old PostCSS config loaded Tailwind as a PostCSS plugin;
+  removing it fixed the build.
+- `9d7cf32` — Docs: root README rewritten without
+  Enterprise/production-grade/real-time/cohort overclaims and with a
+  "Known limits" section; `admin/README.md` (was the stock Vite
+  template) replaced with the real admin setup; MIT LICENSE added
+  (the badge previously linked to a LICENSE file that did not exist;
+  author already named in the README); `composer.json` skeleton name
+  `laravel/laravel` → `namirma/laravel-vue-ecommerce`.
+
+### Builds actually run (throwaway copies, admin only)
+
+- Baseline (Vite 6 stack): `npm ci` + `npm run build`, normal and
+  `VITE_DEMO_MODE=true` — both passed (846 modules, 524.68 kB JS,
+  pre-existing >500 kB chunk warning).
+- With chart fixes: normal and demo builds passed (525.24 kB JS).
+- With majors: normal and demo builds passed (518.53 kB JS, CSS
+  51.11 kB vs 39.60 kB before, because Tailwind 4 now generates
+  `shadow-xs`/`shadow-2xs`, which Tailwind 3 silently dropped).
+- Within-major updates: none available — `npm outdated` showed every
+  non-major package already at its wanted version.
+
+### Deliberately NOT done, with exact blockers
+
+- Laravel 12: no PHP/Composer runtime in this environment, so no
+  `composer update`, migration or test run was possible. Backend stays
+  on Laravel 11.37.0 / PHP ^8.2 / Sanctum 4.0.7. Note:
+  `composer.json` was renamed, so `composer.lock`'s content-hash will
+  resync on the next `composer update`; dependencies are untouched.
+- Monthly-revenue endpoint: adding one would be untested PHP code
+  (same missing PHP runtime), so the line chart stays empty in live
+  mode and the gap is documented in the README and the UI.
+- Unrouted web controllers: left in place, not deleted untested.
+- No admin (Vitest) test suite added; only Laravel example tests exist.
+- Browser visual check of the Tailwind 4 upgrade: a production build
+  cannot prove visual parity, so it is still recommended before release.
+- No secrets, features, endpoints, screenshots, metrics or test counts
+  were invented. The demo token in `src/demo/demoData.js` is a local
+  preview token, used only when `VITE_DEMO_MODE=true`.
