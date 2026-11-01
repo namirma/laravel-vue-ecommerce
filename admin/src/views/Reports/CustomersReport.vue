@@ -11,9 +11,13 @@ import axiosClient from "../../axios.js";
 import {ref, watch} from "vue";
 import LineChart from "../../components/core/Charts/Line.vue";
 import {useRoute} from "vue-router";
+import { isDemoMode } from "../../config.js";
 
 const route = useRoute();
-const chartData = ref({
+// Sample series, used ONLY in demo mode. In live mode the chart starts
+// empty and is filled from /report/customers, so a failed API call never
+// leaves sample figures on screen as if they were real customers.
+const demoChartData = {
   labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
   datasets: [{
     label: 'New Customer Registrations',
@@ -25,7 +29,21 @@ const chartData = ref({
     tension: 0.35,
     data: [12, 19, 28, 24, 38, 52]
   }]
-});
+};
+const emptyChartData = {
+  labels: [],
+  datasets: [{
+    label: 'New Customer Registrations',
+    borderColor: '#10B981',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 3,
+    pointBackgroundColor: '#10B981',
+    fill: true,
+    tension: 0.35,
+    data: []
+  }]
+};
+const chartData = ref(isDemoMode ? demoChartData : emptyChartData);
 
 watch(route, () => {
   getData();
@@ -39,7 +57,7 @@ function getData() {
       }
     })
     .catch(() => {
-      // Keep rich demo data
+      chartData.value = isDemoMode ? demoChartData : emptyChartData;
     });
 }
 </script>

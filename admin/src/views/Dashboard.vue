@@ -107,6 +107,7 @@
         <div class="h-64 sm:h-72 w-full">
           <LineChart :width="400" :height="270" :data="revenueChartData"/>
         </div>
+        <p v-if="!isDemoMode" class="mt-3 text-xs text-slate-400">There is no monthly-revenue API endpoint yet, so this chart is empty in live mode; it shows sample data only in demo mode.</p>
       </div>
 
       <!-- Right: Orders by Country Doughnut Chart -->
@@ -118,20 +119,13 @@
         <div class="h-56 flex items-center justify-center my-3">
           <DoughnutChart :width="200" :height="200" :data="ordersByCountry"/>
         </div>
-        <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-center">
-          <div>
-            <span class="text-[10px] text-slate-400 uppercase font-semibold">Top Market</span>
-            <p class="text-xs font-bold text-slate-800">Germany (31%)</p>
-          </div>
-          <div>
-            <span class="text-[10px] text-slate-400 uppercase font-semibold">2nd Market</span>
-            <p class="text-xs font-bold text-slate-800">USA (28%)</p>
-          </div>
-          <div>
-            <span class="text-[10px] text-slate-400 uppercase font-semibold">3rd Market</span>
-            <p class="text-xs font-bold text-slate-800">Iran (18%)</p>
+        <div v-if="topMarkets.length" class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-center">
+          <div v-for="(market, index) in topMarkets" :key="market.name">
+            <span class="text-[10px] text-slate-400 uppercase font-semibold">{{ ['Top Market', '2nd Market', '3rd Market'][index] }}</span>
+            <p class="text-xs font-bold text-slate-800">{{ market.name }} ({{ market.share }}%)</p>
           </div>
         </div>
+        <p v-else class="pt-3 border-t border-slate-100 text-center text-xs text-slate-400">No country data yet.</p>
       </div>
     </div>
 
@@ -269,7 +263,12 @@ const productsCount = ref(0);
 const paidOrders = ref(0);
 const totalIncome = ref('$0.00');
 
-const revenueChartData = ref({
+// Sample chart series, used ONLY in demo mode. In live mode the charts
+// start empty and are filled from the API (or stay empty on error), so
+// the dashboard never presents sample figures as real store data. There
+// is no monthly-revenue endpoint, so the line chart has no live source
+// and stays empty in live mode; see the note under the chart.
+const demoRevenueChartData = {
   labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
   datasets: [
     {
@@ -285,14 +284,53 @@ const revenueChartData = ref({
       data: [18200, 24500, 31200, 29800, 42100, 48590]
     }
   ]
-});
+};
 
-const ordersByCountry = ref({
+const demoOrdersByCountry = {
   labels: ['Germany', 'USA', 'Iran', 'UK', 'France'],
   datasets: [{
     backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
     data: [42, 38, 25, 18, 12]
   }]
+};
+
+const revenueChartData = ref(isDemoMode ? demoRevenueChartData : {
+  labels: [],
+  datasets: [{
+    label: 'Monthly Net Sales ($)',
+    borderColor: '#4F46E5',
+    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+    borderWidth: 3,
+    pointBackgroundColor: '#4F46E5',
+    pointBorderColor: '#fff',
+    pointHoverRadius: 6,
+    fill: true,
+    tension: 0.35,
+    data: []
+  }]
+});
+
+const ordersByCountry = ref(isDemoMode ? demoOrdersByCountry : {
+  labels: [],
+  datasets: [{
+    backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
+    data: []
+  }]
+});
+
+// Top 3 markets, computed from the (live or demo) doughnut data, with
+// each market's share of the charted total. Empty when there is no data.
+const topMarkets = computed(() => {
+  const labels = ordersByCountry.value.labels || [];
+  const data = ordersByCountry.value.datasets?.[0]?.data || [];
+  const total = data.reduce((sum, value) => sum + (value || 0), 0);
+  if (!total) {
+    return [];
+  }
+  return labels
+    .map((name, index) => ({ name, count: data[index] || 0, share: Math.round((data[index] || 0) / total * 100) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
 });
 
 const latestCustomers = ref([]);
@@ -330,6 +368,26 @@ function getStatusDot(status) {
 
 function updateDashboard() {
   const d = chosenDate.value
+
+  // The line chart has no live source (no monthly-revenue endpoint), so
+  // in demo mode it shows the sample series and in live mode it stays empty.
+  if (isDemoMode) {
+    revenueChartData.value = demoRevenueChartData;
+  }
+
+  axiosClient.get(`/dashboard/orders-by-country`, {params: {d}})
+    .then(({data}) => {
+      const rows = Array.isArray(data) ? data : (data?.data || []);
+      const palette = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+      ordersByCountry.value = {
+        labels: rows.map((row) => row.name),
+        datasets: [{
+          backgroundColor: rows.map((_, index) => palette[index % palette.length]),
+          data: rows.map((row) => row.count)
+        }]
+      };
+    })
+    .catch(() => { if (isDemoMode) { ordersByCountry.value = demoOrdersByCountry; } });
 
   axiosClient.get(`/dashboard/customers-count`, {params: {d}})
     .then(({data}) => { customersCount.value = data; })
